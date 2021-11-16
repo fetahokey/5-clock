@@ -1,0 +1,18 @@
+.App {
+  text-align: center;
+}
+
+.Editor {
+  width: 98%;
+  resize: none;
+  font-size: 14px;
+  font-family: "Roboto";
+  font-weight: 300;
+  padding: 1%;
+}
+
+#preview {
+  overflow-y: scroll;
+  overflow-x: scroll;
+  width: 100%;
+}
