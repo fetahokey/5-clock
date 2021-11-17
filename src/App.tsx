@@ -13,6 +13,7 @@ import "./App.css";
 const App = () => {
   const MAX = 60,
     MIN = 1,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     MAX_TIMER = 3600,
     MIN_TIMER = 0,
     BREAK = "Break",
@@ -20,27 +21,40 @@ const App = () => {
 
   const [breakLength, setBreakLength] = useState(5);
   const [sessionLength, setSessionLength] = useState(25);
-  const [timer, setTimer] = useState<number>(1500);
+  const [timer, setTimer] = useState<{ value: number; type: string }>({
+    value: 1500,
+    type: SESSION,
+  });
   const [isRunning, setIsRunning] = useState(false);
-  const [timerType, setTimerType] = useState(SESSION);
+  const [audioBeep, setAudioBeep] = useState<HTMLAudioElement | null>(null);
+
   let timerId: any = null;
 
   const startDecTimer = () => {
     setTimer((prevStat) => {
-      if (prevStat === 0) {
-        setIsRunning(false);
-        if (timerType === SESSION) {
-          setTimerType(BREAK);
-          setTimer(breakLength * 60);
-          setIsRunning(true);
+      if (prevStat.value === 0) {
+        audioBeep?.play();
+        if (prevStat.type === SESSION) {
+          const returnState = {
+            value: breakLength * 60,
+            type: BREAK,
+          };
+          return returnState;
         }
-        if (timerType === BREAK) {
-          setTimerType(SESSION);
-          setTimer(sessionLength * 60);
-          setIsRunning(true);
+        if (prevStat.type === BREAK) {
+          const returnState = {
+            value: sessionLength * 60,
+            type: SESSION,
+          };
+          return returnState;
         }
       }
-      return prevStat > MIN_TIMER ? prevStat - 1 : prevStat;
+
+      const returnState = {
+        value: prevStat.value > MIN_TIMER ? prevStat.value - 1 : prevStat.value,
+        type: prevStat.type,
+      };
+      return returnState;
     });
   };
 
@@ -50,6 +64,7 @@ const App = () => {
     }
 
     if (isRunning) {
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       timerId = setInterval(startDecTimer, 1000);
     }
     return () => {
@@ -70,10 +85,13 @@ const App = () => {
 
   const handleReset = () => {
     setIsRunning(false);
-    setTimerType(SESSION);
     setBreakLength(5);
     setSessionLength(25);
-    setTimer(1500);
+    setTimer({ value: 1500, type: SESSION });
+    if (audioBeep) {
+      audioBeep.pause();
+      audioBeep.currentTime = 0;
+    }
   };
 
   //  break increment / decrement
@@ -93,7 +111,10 @@ const App = () => {
   const handleSessionIncrement = () => {
     setSessionLength((prevState) => {
       const actState = prevState < MAX ? prevState + 1 : prevState;
-      setTimer(actState * 60);
+      setTimer((prevTimerState) => ({
+        value: actState * 60,
+        type: prevTimerState.type,
+      }));
       return actState;
     });
   };
@@ -101,7 +122,10 @@ const App = () => {
   const handleSessionDecrement = () => {
     setSessionLength((prevState) => {
       const actState = prevState > MIN ? prevState - 1 : prevState;
-      setTimer(actState * 60);
+      setTimer((prevTimerState) => ({
+        value: actState * 60,
+        type: prevTimerState.type,
+      }));
       return actState;
     });
   };
@@ -158,8 +182,8 @@ const App = () => {
         </IconButton>
       </Box>
       <Box flex={12}>
-        <Typography id="timer-label">{timerType}</Typography>
-        <Typography id="time-left">{formatTimer(timer)}</Typography>
+        <Typography id="timer-label">{timer.type}</Typography>
+        <Typography id="time-left">{formatTimer(timer.value)}</Typography>
 
         <IconButton id="start_stop" aria-label="" onClick={handlePlayPause}>
           <PlayArrow />
@@ -169,6 +193,15 @@ const App = () => {
         <IconButton id="reset" aria-label="" onClick={handleReset}>
           <Replay />
         </IconButton>
+
+        <audio
+          id="beep"
+          preload="auto"
+          ref={(audio) => {
+            setAudioBeep(audio);
+          }}
+          src="https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav"
+        />
       </Box>
     </Box>
   );
