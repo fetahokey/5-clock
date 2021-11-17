@@ -1,115 +1,174 @@
-import { Button } from "@mui/material";
+import {
+  ArrowDropDown,
+  ArrowDropUp,
+  Pause,
+  PlayArrow,
+  Replay,
+} from "@mui/icons-material";
+import { IconButton, Typography } from "@mui/material";
 import { Box } from "@mui/system";
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const bankOne = [
-  {
-    keyCode: 81,
-    keyTrigger: "Q",
-    id: "Heater-1",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Heater-1.mp3",
-  },
-  {
-    keyCode: 87,
-    keyTrigger: "W",
-    id: "Heater-2",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Heater-2.mp3",
-  },
-  {
-    keyCode: 69,
-    keyTrigger: "E",
-    id: "Heater-3",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Heater-3.mp3",
-  },
-  {
-    keyCode: 65,
-    keyTrigger: "A",
-    id: "Heater-4",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Heater-4_1.mp3",
-  },
-  {
-    keyCode: 83,
-    keyTrigger: "S",
-    id: "Clap",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Heater-6.mp3",
-  },
-  {
-    keyCode: 68,
-    keyTrigger: "D",
-    id: "Open-HH",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Dsc_Oh.mp3",
-  },
-  {
-    keyCode: 90,
-    keyTrigger: "Z",
-    id: "Kick-n'-Hat",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Kick_n_Hat.mp3",
-  },
-  {
-    keyCode: 88,
-    keyTrigger: "X",
-    id: "Kick",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/RP4_KICK_1.mp3",
-  },
-  {
-    keyCode: 67,
-    keyTrigger: "C",
-    id: "Closed-HH",
-    url: "https://s3.amazonaws.com/freecodecamp/drums/Cev_H2.mp3",
-  },
-];
-
 const App = () => {
-  const [currentDrum, setCurrentDrum] = useState("");
+  const MAX = 60,
+    MIN = 1,
+    MAX_TIMER = 3600,
+    MIN_TIMER = 0,
+    BREAK = "Break",
+    SESSION = "Session";
+
+  const [breakLength, setBreakLength] = useState(5);
+  const [sessionLength, setSessionLength] = useState(25);
+  const [timer, setTimer] = useState<number>(1500);
+  const [isRunning, setIsRunning] = useState(false);
+  const [timerType, setTimerType] = useState(SESSION);
+  let timerId: any = null;
+
+  const startDecTimer = () => {
+    setTimer((prevStat) => {
+      if (prevStat === 0) {
+        setIsRunning(false);
+        if (timerType === SESSION) {
+          setTimerType(BREAK);
+          setTimer(breakLength * 60);
+          setIsRunning(true);
+        }
+        if (timerType === BREAK) {
+          setTimerType(SESSION);
+          setTimer(sessionLength * 60);
+          setIsRunning(true);
+        }
+      }
+      return prevStat > MIN_TIMER ? prevStat - 1 : prevStat;
+    });
+  };
 
   useEffect(() => {
-    let effect = true;
+    if (!isRunning) {
+      clearInterval(timerId);
+    }
+
+    if (isRunning) {
+      timerId = setInterval(startDecTimer, 1000);
+    }
     return () => {
-      // eslint-disable-next-line
-      effect = false;
+      clearInterval(timerId);
     };
-  }, []);
+  }, [isRunning]);
+
+  const formatTimer = (timer: number): string => {
+    const nmm = timer / 60;
+    const mm = parseInt(nmm.toString());
+    const ss = timer % 60;
+    let mms = mm.toString();
+    let sss = ss.toString();
+    mms = mms.length === 1 ? "0".concat(mms) : mms;
+    sss = sss.length === 1 ? "0".concat(sss) : sss;
+    return `${mms}:${sss}`;
+  };
+
+  const handleReset = () => {
+    setIsRunning(false);
+    setTimerType(SESSION);
+    setBreakLength(5);
+    setSessionLength(25);
+    setTimer(1500);
+  };
+
+  //  break increment / decrement
+  const handleBreakIncrement = () => {
+    setBreakLength((prevState) =>
+      prevState < MAX ? prevState + 1 : prevState
+    );
+  };
+
+  const handleBreakDecrement = () => {
+    setBreakLength((prevState) =>
+      prevState > MIN ? prevState - 1 : prevState
+    );
+  };
+
+  //session increment/decrement
+  const handleSessionIncrement = () => {
+    setSessionLength((prevState) => {
+      const actState = prevState < MAX ? prevState + 1 : prevState;
+      setTimer(actState * 60);
+      return actState;
+    });
+  };
+
+  const handleSessionDecrement = () => {
+    setSessionLength((prevState) => {
+      const actState = prevState > MIN ? prevState - 1 : prevState;
+      setTimer(actState * 60);
+      return actState;
+    });
+  };
+
+  const handlePlayPause = () => {
+    setIsRunning((prevState) => !prevState);
+  };
 
   return (
     <Box
       className="App"
-      id="drum-machine"
-      height="100vh"
+      id="5-clock"
       display="flex"
-      flexDirection="row"
-      alignItems="center"
+      width="400px"
+      flexWrap="wrap"
+      border={1}
+      alignSelf="center"
+      pl={50}
     >
-      <Box id="display" display="none">
-        {currentDrum}
+      <Box flex={6} border={2}>
+        <Typography id="break-label">Break </Typography>
+        <IconButton
+          id="break-increment"
+          onClick={handleBreakIncrement}
+          disabled={isRunning}
+        >
+          <ArrowDropUp />
+        </IconButton>
+        <Typography id="break-length">{breakLength}</Typography>
+        <IconButton
+          id="break-decrement"
+          onClick={handleBreakDecrement}
+          disabled={isRunning}
+        >
+          <ArrowDropDown />
+        </IconButton>
       </Box>
-      <Box id="_display" p={10}>
-        {bankOne.map((item) => (
-          <Box key={item.keyTrigger} p={1} m={1}>
-            <Button
-              className="drum-pad"
-              id={`___${item.keyTrigger}`}
-              onClick={() => {
-                setCurrentDrum(item.keyTrigger);
-                const sound = document.getElementById(item.keyTrigger) as any;
-                sound.currentTime = 0;
-                sound.play();
-              }}
-              onKeyDown={(e: any) => {
-                if (e.keyCode === item.keyCode) {
-                  setCurrentDrum(item.keyTrigger);
-                  const sound = document.getElementById(item.keyTrigger) as any;
-                  sound.currentTime = 0;
-                  sound.play();
-                }
-              }}
-              variant="contained"
-            >
-              {item.keyTrigger}
-              <audio className="clip" id={item.keyTrigger} src={item.url} />
-            </Button>
-          </Box>
-        ))}
+      <Box flex={6} border={2}>
+        <Typography id="session-label">Session </Typography>
+        <IconButton
+          id="session-increment"
+          onClick={handleSessionIncrement}
+          disabled={isRunning}
+        >
+          <ArrowDropUp />
+        </IconButton>
+        <Typography id="session-length">{sessionLength}</Typography>
+        <IconButton
+          id="session-decrement"
+          onClick={handleSessionDecrement}
+          disabled={isRunning}
+        >
+          <ArrowDropDown />
+        </IconButton>
+      </Box>
+      <Box flex={12}>
+        <Typography id="timer-label">{timerType}</Typography>
+        <Typography id="time-left">{formatTimer(timer)}</Typography>
+
+        <IconButton id="start_stop" aria-label="" onClick={handlePlayPause}>
+          <PlayArrow />
+          <Pause />
+        </IconButton>
+
+        <IconButton id="reset" aria-label="" onClick={handleReset}>
+          <Replay />
+        </IconButton>
       </Box>
     </Box>
   );
